@@ -302,6 +302,11 @@ function render(){
   }
 }
 function fmtNum(v, unit){ return typeof v === "number" ? v.toLocaleString("it-IT") + (unit||"") : (v==null? "n/d" : esc(v)); }
+const BVD_ROWS = [["revenue","Fatturato"],["gross_margin","Gross Margin"],["gross_margin_pct","Gross Margin %","%"],["ebitda","EBITDA"],["ebitda_margin_pct","EBITDA Margin %","%"],["interest","Interest"],["net_income","Net Income"],["net_financial_position","Net financial position"],["inventory","Inventory"],["receivables","Receivable"],["payables","Payables"],["cash_available","Cash available"]];
+function bvdTable(b){
+  const ys = b.years;
+  return `<div class="sec"><h4>Bilancio semplificato (Moody's / BvD)</h4><table><thead><tr><th></th>${ys.map(y=>`<th>${esc(y.year)}</th>`).join("")}</tr></thead><tbody>${BVD_ROWS.map(([k,l,u])=>`<tr><td>${l}</td>${ys.map(y=>`<td>${typeof y[k]==="number" ? y[k].toLocaleString("it-IT")+(u||"") : "n/d"}</td>`).join("")}</tr>`).join("")}</tbody></table><div class="mute" style="font-size:12px">Società BvD associata: ${esc(b.matched_name||"n/d")} (${esc(b.bvd_id||"")}) · aggiornato ${esc(b.fetched||"n/d")} · valori nell'unità della fonte. Verificare che l'associazione sia corretta.</div></div>`;
+}
 function openCo(id){
   const c = C.find(x=>x.id===id); const f = c.fin; let h = `<h2>${esc(c.name)}</h2><div class="mute">${esc(c.industry)} · ${esc(c.sub)}</div><div style="margin-top:8px"><button class="btn" id="wbtn" type="button"></button></div>`;
   h += `<div class="sec"><h4>Cosa fa</h4>${c.profile ? `<p>${esc(c.profile.description_it)}</p><div class="kv">${c.profile.hq?`<div>Sede</div><div>${esc(c.profile.hq)}</div>`:""}${c.profile.founded?`<div>Fondata</div><div>${esc(c.profile.founded)}</div>`:""}${c.profile.employees?`<div>Dipendenti</div><div>${esc(c.profile.employees)}</div>`:""}${c.profile.website?`<div>Sito</div><div>${link(/^https?:/i.test(c.profile.website)?c.profile.website:"https://"+c.profile.website)}</div>`:""}<div>Fonte</div><div>${link(c.profile.source_url)||"n/d"} · confidenza ${esc(c.profile.confidence||"n/d")}</div></div>${c.profile.confidence==="Low"?'<div class="warn">Identificazione incerta: verificare che sia la società giusta.</div>':""}${c.overview?`<p class="mute">Dealbook: ${esc(c.overview)}</p>`:""}` : (c.overview ? `<p>${esc(c.overview)}</p><p class="mute">Fonte: dealbook (Mergermarket).</p>` : '<span class="mute">Descrizione non ancora disponibile. Settore indicato dalla fonte: '+esc(c.sector_orig||"n/d")+'.</span>')}</div>`;
@@ -317,6 +322,7 @@ function openCo(id){
     h += `<div class="kpis"><div class="kpi"><small>Ricavi (EUR m)</small><b>${fmtNum(f.revenue_eur_m)}</b></div><div class="kpi"><small>EBITDA (EUR m)</small><b>${fmtNum(f.ebitda_eur_m)}</b></div>${margin?`<div class="kpi"><small>Margine EBITDA</small><b>${margin}</b></div>`:""}${f.employees?`<div class="kpi"><small>Dipendenti</small><b style="font-size:14px">${esc(f.employees)}</b></div>`:""}</div>
     <div class="kv" style="margin-top:8px"><div>Esercizio</div><div>${esc(f.fiscal_year||"n/d")}</div><div>Debito netto / leverage</div><div>${esc(f.net_debt_eur_m_or_leverage||"n/d")}</div><div>Fonte</div><div>${esc(f.source_type||"n/d")} · confidenza ${esc(f.confidence||"n/d")}</div></div>`;
   } else h += `<p class="mute">Nessun dato finanziario disponibile. Da integrare con l'export AIDA.</p>`;
+  if (c.bvd && c.bvd.years && c.bvd.years.length) h += bvdTable(c.bvd);
   if (f && f.notes) h += `<div class="warn">${esc(f.notes)}</div>`;
   if (f && f.recent_news) h += `<div class="sec"><h4>Notizie recenti</h4><p>${esc(f.recent_news)}</p></div>`;
   if (f && f.source_urls) h += `<div class="sec"><h4>Link fonti finanziarie</h4>${[].concat(f.source_urls).map(u=>link(u)).filter(Boolean).join("<br>")}</div>`;
